@@ -681,6 +681,12 @@ impl<'a> SessionDesc<'a> {
 		self.inner.compilerOptionEntryCount = options.options.len() as _;
 		self
 	}
+
+	pub fn preprocessor_macros(mut self, macros: &'a PreprocessorMacros) -> Self {
+		self.inner.preprocessorMacros = macros.macros.as_ptr() as _;
+		self.inner.preprocessorMacroCount = macros.macros.len() as _;
+		self
+	}
 }
 
 macro_rules! option {
@@ -810,4 +816,27 @@ impl CompilerOptions {
 	// Experimental
 	option!(NoMangle, no_mangle(enable: bool));
 	option!(ValidateUniformity, validate_uniformity(enable: bool));
+}
+
+#[derive(Default)]
+pub struct PreprocessorMacros {
+	strings: Vec<(CString, CString)>,
+	macros: Vec<sys::slang_PreprocessorMacroDesc>,
+}
+impl PreprocessorMacros {
+	pub fn with_str(mut self, name: &str, value: &str) -> Self {
+		let name = CString::new(name).unwrap();
+		let name_ptr = name.as_ptr();
+
+		let value = CString::new(value).unwrap();
+		let value_ptr = value.as_ptr();
+		self.strings.push((name, value));
+
+		self.macros.push(sys::slang_PreprocessorMacroDesc {
+			name: name_ptr,
+			value: value_ptr,
+		});
+
+		self
+	}
 }
